@@ -25,10 +25,14 @@ module basys3_hack_pc_top(
     // 今回は 100MHz をそのままシステムクロックとして使用します。
     // タイミング制約(XDC)で 100MHz (Period 10ns) を定義することを忘れずに。
     
+    // 100MHz -> 12.5MHz 程度の生成
+    logic [2:0] clk_cnt;
+    always_ff @(posedge clk) begin
+        clk_cnt <= clk_cnt + 1;
+    end
     logic sys_clk;
+    assign sys_clk = clk_cnt[2]; // 100MHz / 8 = 12.5MHz
     logic sys_reset;
-    
-    assign sys_clk = clk;
 
     // リセット信号の同期化 (btnC -> sys_reset)
     // btnC は非同期入力なので、2段FFを通す
@@ -146,7 +150,7 @@ module basys3_hack_pc_top(
     // ROM (Instruction Memory)
     // Note: Point to your final .hack file here or use a default one.
     hack_rom #(
-        .INIT_FILE("math.hack") // 後でLチカ用プログラムに変更します
+        .INIT_FILE("calculator_lite.hack")
     ) u_rom (
         .clk         (sys_clk),
         .addr        (pc),

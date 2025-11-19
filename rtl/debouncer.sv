@@ -27,7 +27,7 @@ module debouncer(
 
     // 2. Debounce Counter
     // 10ms @ 100MHz = 1,000,000 cycles -> 20-bit counter (1,048,576)
-    localparam int MAX_COUNT = 1_000_000;
+    localparam int MAX_COUNT = 100_000;
     logic [19:0] counter;
     logic        stable_val; // 現在安定しているとみなしている値
 
