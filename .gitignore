@@ -1,0 +1,95 @@
+################################################################################
+## Xilinx Vivado / Vitis .gitignore
+##
+## 対象: Vivado, Vitis, SystemVerilog
+## 目的: 再生成可能なファイル、ローカル設定、ログ、実行結果を除外する
+################################################################################
+
+# --- Vivado プロジェクトディレクトリ ---
+# Vivadoが生成する主要なディレクトリ。
+# これらはソースコード (RTL, XDC, XCI) から再生成されます。
+*.cache/
+*.gen/
+*.impl/
+*.runs/
+*.sim/
+
+# --- Vivado プロジェクトファイル ---
+# プロジェクトファイル (*.xpr) 自体は管理下に置くことが多いですが、
+# ユーザー固有の設定ファイルは除外します。
+*.xpr.user
+*.pr.xml
+
+# --- Vitis / SDK / HLS ---
+# ソフトウェア (Vitis) や HLS が生成するディレクトリ
+*.vitis/
+*.vitis.meta
+*.bsp/
+*.sw/
+*.hwh/
+*_system_wrapper/
+Debug/
+Release/
+.metadata/
+.sdk/
+*.sdk/
+sdk_log/
+*._prj/
+solution*/
+
+# --- ログ、レポート、ジャーナルファイル ---
+# Vivadoが実行時に生成する各種ログやレポート
+*.log
+*.rpt
+*.jou
+*.str
+*.tcl.log
+*.vcd
+*.wdb
+*.fsdb
+*_wave.tcl
+
+# --- Vivado が生成するその他の一時ファイル ---
+_xmsgs/
+*.lso
+*.opensession
+*.backup.xml
+*.xpe
+*.xpf
+*.xsc
+*.zip
+*.tar.gz
+*.ngc
+*.dcp
+*.html
+*.xml
+*.pb
+
+# Vivadoの使用状況レポート (WebTalk)
+webtalk.*
+usage_statistics_webtalk.*
+xinstall.log
+xinstall.txt
+
+################################################################################
+## 除外の例外 (管理下に置くべきファイル)
+##
+## 以下のファイルは *除外しない* ように注意してください。
+## これらはプロジェクトのソースコードです。
+##
+## !*.sv
+## !*.v
+## !*.svh
+## !*.vh
+## !*.xdc
+## !*.xci
+## !*.bd
+## !*.xpr
+## !*.tcl
+## !README.md
+################################################################################
+
+# build artifacts for software
+*.bin
+*.elf
+*.hex
