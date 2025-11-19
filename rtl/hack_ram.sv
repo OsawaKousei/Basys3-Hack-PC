@@ -1,30 +1,42 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Module Name: hack_ram
-// Description: Data Memory for Hack CPU (16K Words)
+// Description: Data Memory for Hack Computer
+//              - Asynchronous Read (Combinational) implementation
+//              - Required for single-cycle Hack CPU architecture
 //////////////////////////////////////////////////////////////////////////////////
 
 module hack_ram #(
-    parameter int ADDR_WIDTH = 14 // 16K words (0x0000 - 0x3FFF)
-) (
-    input  logic                  clk,
-    input  logic                  we,       // Write Enable
-    input  logic [ADDR_WIDTH-1:0] addr,
-    input  logic [15:0]           d_in,
-    output logic [15:0]           d_out
+    parameter int DEPTH = 16384, // 16K words
+    parameter int WIDTH = 16
+)(
+    input  logic             clk,
+    input  logic             we,    // Write Enable
+    input  logic [13:0]      addr,  // Address (14-bit for 16K)
+    input  logic [WIDTH-1:0] d_in,  // Data In
+    output logic [WIDTH-1:0] d_out  // Data Out
 );
 
-    // メモリ配列定義 (16K x 16bit)
-    // Vivado will infer Block RAM here 
-    (* ram_style = "block" *)
-    logic [15:0] ram_array [0:(2**ADDR_WIDTH)-1];
+    // メモリ配列の定義
+    // simulationでは初期値を0にするため bit ではなく logic を推奨
+    logic [WIDTH-1:0] ram_array [0:DEPTH-1];
 
-    // 同期書き込み・読み出し
+    // 初期化 (Simulation用: x を防ぐため全て0クリア)
+    initial begin
+        for (int i = 0; i < DEPTH; i++) begin
+            ram_array[i] = '0;
+        end
+    end
+
+    // 書き込み: クロック同期 (Synchronous Write)
     always_ff @(posedge clk) begin
         if (we) begin
             ram_array[addr] <= d_in;
         end
-        d_out <= ram_array[addr]; // Read-First mode usually implied
     end
+
+    // 読み出し: 非同期 (Asynchronous Read)
+    // アドレスが変化したら即座にデータを出力する
+    assign d_out = ram_array[addr];
 
 endmodule

@@ -146,7 +146,7 @@ module basys3_hack_pc_top(
     // ROM (Instruction Memory)
     // Note: Point to your final .hack file here or use a default one.
     hack_rom #(
-        .INIT_FILE("led_test.hack") // 後でLチカ用プログラムに変更します
+        .INIT_FILE("math.hack") // 後でLチカ用プログラムに変更します
     ) u_rom (
         .clk         (sys_clk),
         .addr        (pc),
