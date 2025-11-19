@@ -150,7 +150,7 @@ module basys3_hack_pc_top(
     // ROM (Instruction Memory)
     // Note: Point to your final .hack file here or use a default one.
     hack_rom #(
-        .INIT_FILE("calculator_lite.hack")
+        .INIT_FILE("calculator.hack") // Change to your desired .hack file
     ) u_rom (
         .clk         (sys_clk),
         .addr        (pc),

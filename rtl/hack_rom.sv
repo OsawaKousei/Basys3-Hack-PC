@@ -7,7 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module hack_rom #(
-    parameter string INIT_FILE = "calculator_lite.hack", 
+    parameter string INIT_FILE = "calculator.hack", 
     parameter int    ADDR_WIDTH = 12  // 12bit = 4096 words (容量削減)
 ) (
     input  logic                  clk, // 非同期なので内部では未使用
