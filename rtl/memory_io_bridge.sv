@@ -1,11 +1,8 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Module Name: memory_io_bridge
-// Description: Maps CPU addressM to RAM or I/O devices.
-//              Address Map:
-//              0x0000 - 0x3FFF : RAM (16K)
-//              0x4000 - 0x5FFF : Screen (Reserved/Unused)
-//              0x6000 - 0x7FFF : Memory Mapped I/O
+// Description: Address Decoder & Data Router for Hack Computer
+//              (Step 3 Updated Version)
 //////////////////////////////////////////////////////////////////////////////////
 
 module memory_io_bridge (
@@ -21,69 +18,59 @@ module memory_io_bridge (
     output logic        ram_we,
     input  logic [15:0] ram_data_out,
 
-    // I/O Interface (Step 2で使用予定)
-    output logic [15:0] io_addr,     // 下位ビットを使用
-    output logic [15:0] io_data_out,
-    output logic        io_we,
-    input  logic [15:0] io_data_in
+    // I/O Interface (Updated Ports)
+    input  logic [15:0] sw_data,   // 0x6000
+    input  logic [4:0]  btn_data,  // 0x6001
+    output logic        seg_we,    // 0x6002 Write Enable
+    output logic        led_we,    // 0x6003 Write Enable
+    output logic [15:0] io_data_out // Data to be written
 );
 
-    // アドレスデコード用定数
-    localparam logic [1:0] SEL_RAM    = 2'b00; // 0x0000 - 0x3FFF (top 2 bits 00)
-    localparam logic [1:0] SEL_SCREEN = 2'b01; // 0x4000 - 0x5FFF (top 2 bits 01)
-    localparam logic [1:0] SEL_IO     = 2'b11; // 0x6000 - 0x7FFF (starts with 11 in binary for 15bit addr? No.)
-    
-    // Hack Address is 15-bit.
-    // 0x0000 - 0x3FFF: 00xx_xxxx_xxxx_xxxx (RAM)
-    // 0x4000 - 0x5FFF: 01xx_xxxx_xxxx_xxxx (Screen)
-    // 0x6000 - 0x7FFF: 11xx_xxxx_xxxx_xxxx (Keyboard/IO in standard Hack is 0x6000=24576)
-    // Wait, 0x6000 (Hex) = 0110_0000... in 16bit.
-    // Let's look at bit 14 and 13 of addressM (15-bit width: [14:0]).
-    // 0x0000-0x3FFF: 00... -> bits[14:13] = 00
-    // 0x4000-0x5FFF: 01... -> bits[14:13] = 01
-    // 0x6000-0x7FFF: 11... -> bits[14:13] = 11 (Wait, 0x6000 is 110... in 15-bit? No.)
-    
-    // Correct decoding for 15-bit address:
-    // 0x0000 (0)     -> 000 0000 0000 0000
-    // 0x3FFF (16383) -> 011 1111 1111 1111
-    // 0x4000 (16384) -> 100 0000 0000 0000
-    // 0x6000 (24576) -> 110 0000 0000 0000
-    
+    // アドレスデコード
     logic is_ram;
-    logic is_io;
+    logic is_io_sw;
+    logic is_io_btn;
+    logic is_io_seg;
+    logic is_io_led;
 
     always_comb begin
-        is_ram = (addressM[14] == 1'b0);      // 0x0000 - 0x3FFF
-        is_io  = (addressM[14:13] == 2'b11);  // 0x6000 - 0x7FFF
+        // RAM: 0x0000 - 0x3FFF (MSB bit 14 is 0)
+        is_ram = (addressM[14] == 1'b0);
+        
+        // I/O: 0x6000 - 0x7FFF (Upper 2 bits are 11)
+        // 具体的なアドレスマッチング
+        if (addressM == 15'h6000) is_io_sw  = 1'b1; else is_io_sw  = 1'b0;
+        if (addressM == 15'h6001) is_io_btn = 1'b1; else is_io_btn = 1'b0;
+        if (addressM == 15'h6002) is_io_seg = 1'b1; else is_io_seg = 1'b0;
+        if (addressM == 15'h6003) is_io_led = 1'b1; else is_io_led = 1'b0;
     end
 
-    // RAM Outputs
-    always_comb begin
-        ram_addr    = addressM[13:0]; // RAMは14bitアドレス
-        ram_data_in = outM;
-        ram_we      = writeM & is_ram;
-    end
+    // --- Output Logic (CPU -> Devices) ---
+    
+    // RAM制御
+    assign ram_addr    = addressM[13:0];
+    assign ram_data_in = outM;
+    assign ram_we      = writeM & is_ram;
 
-    // I/O Outputs (Pass-through)
-    always_comb begin
-        io_addr     = {2'b00, addressM[13:0]}; // 拡張用
-        io_data_out = outM;
-        io_we       = writeM & is_io;
-    end
+    // I/O制御 (書き込み信号生成)
+    assign io_data_out = outM; // データは共通
+    assign seg_we      = writeM & is_io_seg;
+    assign led_we      = writeM & is_io_led;
 
-    // CPU Input MUX (inM)
-    // 組み合わせ回路でのマルチプレクサ [cite: 1707]
+    // --- Input Logic (Devices -> CPU) ---
+    
+    // マルチプレクサ: アドレスに応じて CPU に返すデータを選択
     always_comb begin
-        // デフォルト値 (ラッチ防止) [cite: 1712]
-        inM = 16'h0000;
+        inM = 16'h0000; // Default
 
         if (is_ram) begin
             inM = ram_data_out;
-        end else if (is_io) begin
-            inM = io_data_in;
-        end else begin
-            inM = 16'h0000; // Screen領域など
+        end else if (is_io_sw) begin
+            inM = sw_data;
+        end else if (is_io_btn) begin
+            inM = {11'd0, btn_data}; // 5bit button data -> 16bit padding
         end
+        // Write-only registers (LED, SEG) usually return 0
     end
 
 endmodule
